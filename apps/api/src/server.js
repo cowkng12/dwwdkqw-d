@@ -147,6 +147,24 @@ function renderMiniAppHtml() {
       return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
     }
 
+    function renderError(title, message) {
+      list.innerHTML = '<article class="card empty"><strong class="error">' + escapeHtml(title) + '</strong><p>' + escapeHtml(message) + '</p></article>';
+    }
+
+    function getFriendlyError(error) {
+      const message = String(error?.message || error || 'Ошибка');
+
+      if (message.includes('initData') || message.includes('hash')) {
+        return 'Открой Mini App через кнопку в Telegram-боте. В браузере доступ к данным отключен.';
+      }
+
+      if (message.includes('not allowed') || message.includes('whitelist')) {
+        return 'Твой Telegram ID не добавлен в whitelist. Добавь его в ALLOWED_TELEGRAM_USER_IDS на Render.';
+      }
+
+      return message;
+    }
+
     function renderCandidates(candidates) {
       totalCount.textContent = candidates.length;
       foundCount.textContent = candidates.filter((candidate) => candidate.status === 'found').length;
@@ -220,7 +238,7 @@ function renderMiniAppHtml() {
 
         renderCandidates(payload.candidates || []);
       } catch (error) {
-        list.innerHTML = '<article class="card empty"><strong class="error">Ошибка</strong><p>' + escapeHtml(error.message) + '</p></article>';
+        renderError('Ошибка', getFriendlyError(error));
       }
     }
 
@@ -239,7 +257,7 @@ function renderMiniAppHtml() {
 
         await loadCandidates();
       } catch (error) {
-        list.innerHTML = '<article class="card empty"><strong class="error">Scan не запущен</strong><p>' + escapeHtml(error.message) + '</p></article>';
+        renderError('Scan не запущен', getFriendlyError(error));
       } finally {
         scanButton.disabled = false;
         scanButton.textContent = 'Осторожный scan';
@@ -278,7 +296,7 @@ function renderMiniAppHtml() {
         savePreferencesButton.textContent = 'Сохранено';
         setTimeout(() => { savePreferencesButton.textContent = 'Сохранить выбор'; }, 1200);
       } catch (error) {
-        list.innerHTML = '<article class="card empty"><strong class="error">Ошибка настроек</strong><p>' + escapeHtml(error.message) + '</p></article>';
+        renderError('Ошибка настроек', getFriendlyError(error));
         savePreferencesButton.textContent = 'Сохранить выбор';
       } finally {
         savePreferencesButton.disabled = false;

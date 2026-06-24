@@ -1,3 +1,7 @@
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 export const defaultTargetCollections = [
   "Heroic Helmet",
   "Heart Locket",
@@ -45,6 +49,10 @@ export const defaultTargetBackgrounds = [
 const initialCollections = splitEnvList(process.env.MRKT_TARGET_COLLECTIONS);
 const initialBackgrounds = splitEnvList(process.env.MRKT_TARGET_BACKGROUNDS);
 const initialMaxPrice = Number(process.env.MONOCHROME_MAX_PRICE ?? 100);
+const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+const preferencesPath = process.env.SCAN_PREFERENCES_PATH
+  ? path.resolve(process.env.SCAN_PREFERENCES_PATH)
+  : path.resolve(moduleDir, "../../.data/scan-preferences.json");
 
 const scanPreferences = {
   maxPrice: Number.isFinite(initialMaxPrice) && initialMaxPrice > 0 ? initialMaxPrice : 100,
@@ -57,6 +65,8 @@ const scanPreferences = {
   }
 };
 
+loadPersistedPreferences();
+
 function splitEnvList(value) {
   return String(value ?? "")
     .split(",")
@@ -66,6 +76,37 @@ function splitEnvList(value) {
 
 function uniqueList(values) {
   return [...new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean))];
+}
+
+function loadPersistedPreferences() {
+  try {
+    const parsed = JSON.parse(readFileSync(preferencesPath, "utf8"));
+
+    if (Number.isFinite(Number(parsed.maxPrice)) && Number(parsed.maxPrice) > 0) {
+      scanPreferences.maxPrice = Number(parsed.maxPrice);
+    }
+
+    if (Array.isArray(parsed.collections) && parsed.collections.length > 0) {
+      scanPreferences.collections = uniqueList(parsed.collections);
+    }
+
+    if (Array.isArray(parsed.backgrounds) && parsed.backgrounds.length > 0) {
+      scanPreferences.backgrounds = uniqueList(parsed.backgrounds);
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error(`Scan preferences load failed: ${error.message || error}`);
+    }
+  }
+}
+
+function savePersistedPreferences() {
+  mkdirSync(path.dirname(preferencesPath), { recursive: true });
+  writeFileSync(preferencesPath, `${JSON.stringify({
+    maxPrice: scanPreferences.maxPrice,
+    collections: scanPreferences.collections,
+    backgrounds: scanPreferences.backgrounds
+  }, null, 2)}\n`);
 }
 
 export function getScanPreferences() {
@@ -98,6 +139,8 @@ export function updateScanPreferences(payload = {}) {
   if (Array.isArray(payload.backgrounds) && payload.backgrounds.length > 0) {
     scanPreferences.backgrounds = uniqueList(payload.backgrounds);
   }
+
+  savePersistedPreferences();
 
   return getScanPreferences();
 }
