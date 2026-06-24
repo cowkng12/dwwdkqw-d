@@ -1,0 +1,14 @@
+{
+  "name": "mrkt-autobuyer",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace @mrkt/api run dev",
+    "dev:web": "npm --workspace @mrkt/web run dev",
+    "build": "npm run build --workspaces",
+    "start": "npm run start --workspaces"
+  }
+}

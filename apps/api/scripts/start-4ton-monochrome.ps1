@@ -1,0 +1,38 @@
+$env:MONOCHROME_MAX_PRICE = "3"
+$env:MARKET_ALERT_MAX_FLOOR_MULTIPLIER = "1.12"
+$env:MARKET_ALERT_MAX_FLOOR_MULTIPLIER_XMAS_STOCKING = "1.6"
+$env:MARKET_ALERT_MAX_FLOOR_MULTIPLIER_LOL_POP = "1.6"
+$env:MARKET_ALERT_MIN_RESALE_SPREAD = "0.08"
+$env:MARKET_ALERT_MIN_RESALE_SPREAD_XMAS_STOCKING = "-0.15"
+$env:MARKET_ALERT_MIN_RESALE_SPREAD_INSTANT_RAMEN = "0.12"
+$env:MARKET_ALERT_MIN_RESALE_SPREAD_LOL_POP = "-0.15"
+$env:MARKET_ALERT_MIN_RESALE_SPREAD_B_DAY_CANDLE = "0.08"
+$env:MARKET_ALERT_MIN_BACKGROUND_SCORE = "50"
+$env:MARKET_ALERT_REQUIRE_MONOCHROME = "true"
+$env:MARKET_ALERT_REQUIRE_MODEL_BACKDROP_MATCH = "true"
+$env:MARKET_ALERT_MIN_MODEL_BACKDROP_MATCH_SHARE = "0.48"
+$env:MARKET_ALERT_MIN_MODEL_BACKDROP_TOTAL_SHARE = "0.24"
+$env:MARKET_ALERT_MAX_MODEL_BACKDROP_HUE_DISTANCE = "34"
+$env:MARKET_ALERT_ALLOW_TEXT_MONOCHROME_FALLBACK = "true"
+$env:MARKET_ALERT_NOTIFY_FOUND_MONOCHROME = "true"
+$env:MARKET_ALERT_MAX_PER_SCAN = "20"
+$env:MARKET_ALERT_MONOCHROME_DEBUG_LIMIT = "8"
+$env:MARKET_ALERT_RESALE_DEBUG_LIMIT = "8"
+$env:MARKET_ALERT_POLL_MS = "180000"
+$env:MRKT_BANNED_COOLDOWN_MS = "300000"
+$env:MRKT_PAGE_SIZE = "16"
+$env:MRKT_PAGE_SIZE_XMAS_STOCKING = "96"
+$env:MRKT_PAGE_SIZE_LOL_POP = "72"
+$env:MRKT_TARGET_BACKGROUNDS_LIMIT = "200"
+$env:MARKET_BUY_READY = "true"
+$env:MARKET_BUY_READY_MAX_PRICE = "3"
+$env:MARKET_BUY_READY_MIN_SPREAD = "0.15"
+$env:MRKT_TARGET_COLLECTIONS = "Xmas Stocking,Instant Ramen,Lol Pop"
+$env:MRKT_TARGET_BACKGROUNDS = "Aquamarine,Turquoise,Teal,Pacific Cyan,Mint Green,Sky Blue,Maya Blue,Moonstone,Steel Blue,Silver Blue,Cobalt Blue,Azure Blue,Neon Blue,Sapphire,Black,Electric Purple,Cyberpunk,Electric Indigo,Emerald,Malachite,Pacific Green,Shamrock Green,Lavender,Purple,Violet,English Violet,Lilac,Dark Lilac,Navy Blue,French Blue,Blue,Cyan,Lemongrass,Green,Lime Green,Forest Green,Olive Green,Pistachio,Red,Ruby,Crimson,Coral Red,Gold,Pure Gold,Satin Gold,Yellow,Orange,Carrot Juice,Amber,Mustard,Burgundy,Rosewood,Pink,Magenta,Fuchsia,Raspberry,Mauve,Rose,Platinum,White,Silver,Gray,Grey,Steel Grey,Battleship Grey,Feldgrau,Rifle Green,Khaki Green,Dark Green,Pine Green,Hunter Green,Jade Green,Brown,Bronze,Copper,Beige,Sand,Ivory,Vanilla,Seal Brown,Chocolate,Chestnut,Caramel,Cappuccino,Burnt Sienna"
+$env:MRKT_TARGET_BACKGROUNDS_B_DAY_CANDLE = "Black,Electric Purple,Cyberpunk,Electric Indigo,Neon Blue,Azure Blue,Mint Green,Emerald,Malachite,Sky Blue,Sapphire,Aquamarine,Lavender,Purple,Red,Coral Red,Gold,Pure Gold,Platinum,White,Silver"
+$env:MRKT_TARGET_BACKGROUNDS_XMAS_STOCKING = $env:MRKT_TARGET_BACKGROUNDS
+$env:MRKT_TARGET_BACKGROUNDS_LOL_POP = $env:MRKT_TARGET_BACKGROUNDS
+
+Remove-Item Env:\MARKET_ALERT_DRY_RUN -ErrorAction SilentlyContinue
+
+& "C:\Program Files\nodejs\npm.cmd" --workspace @mrkt/api run alerts:poll
