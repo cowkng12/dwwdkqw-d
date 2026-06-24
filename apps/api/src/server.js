@@ -4,7 +4,7 @@ import express from "express";
 import { items, purchases, rules, users } from "./data/store.js";
 import { getTelegramStatus } from "./telegram/config.js";
 import { getTelegramAccount } from "./telegram/client.js";
-import { getBotStatus } from "./telegram/bot.js";
+import { getBotStatus, handleTelegramWebhook, setupTelegramBot } from "./telegram/bot.js";
 import { getAlertDashboardData, runMarketAlertScanSafely } from "./monitor/alerts.js";
 import { updateAlertCandidateStatus } from "./monitor/candidates-store.js";
 
@@ -20,6 +20,16 @@ app.get("/health", (_req, res) => {
 
 app.get("/telegram/status", (_req, res) => {
   res.json({ telegram: getTelegramStatus(), bot: getBotStatus() });
+});
+
+app.post("/telegram/webhook", async (req, res) => {
+  try {
+    await handleTelegramWebhook(req.body);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error(`Telegram webhook failed: ${error.message || error}`);
+    return res.status(200).json({ ok: false });
+  }
 });
 
 app.get("/telegram/account", async (_req, res) => {
@@ -164,4 +174,14 @@ app.post("/autobuy/toggle", (req, res) => {
 
 app.listen(port, () => {
   console.log(`MRKT API listening on port ${port}`);
+
+  if (process.env.TELEGRAM_AUTO_SETUP === "true") {
+    setupTelegramBot()
+      .then((result) => {
+        console.log(`Telegram webhook configured: ${result.webhookUrl}`);
+      })
+      .catch((error) => {
+        console.error(`Telegram setup failed: ${error.message || error}`);
+      });
+  }
 });

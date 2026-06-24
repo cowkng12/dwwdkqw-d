@@ -1,8 +1,8 @@
 :root {
   color-scheme: dark;
   font-family: Arial, Helvetica, sans-serif;
-  background: #081120;
-  color: #f4f7fb;
+  background: #000;
+  color: #f5f5f5;
 }
 
 * {
@@ -13,8 +13,9 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(53, 91, 169, 0.35), transparent 30%),
-    #081120;
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(93, 93, 93, 0.16), transparent 24%),
+    #000;
 }
 
 .page {
@@ -33,7 +34,7 @@ a {
 }
 
 .eyebrow {
-  color: #79a9ff;
+  color: #9c9cff;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 12px;
@@ -41,7 +42,7 @@ a {
 
 .lead {
   max-width: 720px;
-  color: #c2cce0;
+  color: #b8b8c2;
 }
 
 .grid {
@@ -54,18 +55,18 @@ a {
 .note {
   margin-top: 16px;
   padding: 16px 18px;
-  border: 1px solid rgba(121, 169, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
-  background: rgba(12, 21, 39, 0.72);
-  color: #c2cce0;
+  background: rgba(10, 10, 12, 0.86);
+  color: #b8b8c2;
 }
 
 .card {
   padding: 20px;
-  border: 1px solid rgba(121, 169, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;
-  background: rgba(8, 17, 32, 0.82);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(18, 18, 22, 0.96), rgba(7, 7, 9, 0.96));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .stack {
@@ -78,10 +79,10 @@ a {
 .dashboard-card {
   margin-bottom: 16px;
   padding: 20px;
-  border: 1px solid rgba(121, 169, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px;
-  background: rgba(8, 17, 32, 0.84);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(17, 17, 20, 0.98), rgba(4, 4, 6, 0.98));
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .toolbar {
@@ -92,7 +93,7 @@ a {
 }
 
 .muted {
-  color: #aab8d4;
+  color: #9696a3;
 }
 
 .filters {
@@ -106,7 +107,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: #cdd8ee;
+  color: #d7d7df;
   font-size: 14px;
 }
 
@@ -114,10 +115,10 @@ a {
 .filters select {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid rgba(121, 169, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  background: rgba(8, 17, 32, 0.92);
-  color: #f4f7fb;
+  background: rgba(0, 0, 0, 0.86);
+  color: #f5f5f5;
 }
 
 .checkbox {
@@ -139,16 +140,16 @@ a {
   padding: 10px 14px;
   border: none;
   border-radius: 12px;
-  background: #79a9ff;
-  color: #081120;
+  background: #f5f5f5;
+  color: #000;
   font-weight: 700;
   cursor: pointer;
 }
 
 .button.secondary {
-  background: rgba(121, 169, 255, 0.12);
-  color: #d8e5ff;
-  border: 1px solid rgba(121, 169, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .button[disabled],
@@ -166,9 +167,10 @@ a {
 
 .candidate-card {
   padding: 18px;
-  border: 1px solid rgba(121, 169, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(18, 30, 56, 0.92), rgba(10, 18, 34, 0.92));
+  background: linear-gradient(180deg, rgba(14, 14, 18, 0.98), rgba(5, 5, 7, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .candidate-topline {
@@ -189,12 +191,12 @@ a {
 }
 
 .status-found {
-  background: rgba(109, 198, 255, 0.18);
-  color: #8fd5ff;
+  background: rgba(156, 156, 255, 0.16);
+  color: #c4c4ff;
 }
 
 .status-sent {
-  background: rgba(142, 255, 173, 0.16);
+  background: rgba(113, 255, 165, 0.12);
   color: #a9ffc0;
 }
 
@@ -216,11 +218,11 @@ a {
   gap: 4px;
   padding: 10px 12px;
   border-radius: 14px;
-  background: rgba(121, 169, 255, 0.08);
+  background: rgba(255, 255, 255, 0.055);
 }
 
 .metrics span {
-  color: #9fb0d1;
+  color: #8f8f9c;
   font-size: 12px;
 }
 

@@ -63,6 +63,19 @@ export function CandidatesDashboard({ initialCandidates, scan, apiBaseUrl }) {
   const [scanMessage, setScanMessage] = useState("");
   const [isPending, startTransition] = useTransition();
 
+  useEffect(() => {
+    const webApp = window.Telegram?.WebApp;
+
+    if (!webApp) {
+      return;
+    }
+
+    webApp.ready();
+    webApp.expand();
+    webApp.setHeaderColor("#000000");
+    webApp.setBackgroundColor("#000000");
+  }, []);
+
   const collections = useMemo(() => {
     return [...new Set(candidates.map((candidate) => candidate.collection).filter(Boolean))].sort((first, second) => {
       return first.localeCompare(second, "ru");

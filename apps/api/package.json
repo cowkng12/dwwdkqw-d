@@ -9,6 +9,7 @@
     "start": "node src/server.js",
     "telegram:session": "node scripts/generate-session.js",
     "telegram:check": "node scripts/check-account.js",
+    "bot:setup": "node scripts/setup-bot.js",
     "mrkt:token": "node scripts/get-mrkt-token.js",
     "mrkt:debug": "node scripts/debug-mrkt-items.js",
     "mrkt:debug:raw": "node scripts/debug-mrkt-raw.js",
