@@ -6,6 +6,7 @@ import { getTelegramStatus } from "./telegram/config.js";
 import { getTelegramAccount } from "./telegram/client.js";
 import { getBotStatus, handleTelegramWebhook, setupTelegramBot } from "./telegram/bot.js";
 import { getAlertDashboardData, runMarketAlertScanSafely } from "./monitor/alerts.js";
+import { getScanPreferences, updateScanPreferences } from "./market/scan-config.js";
 import { updateAlertCandidateStatus } from "./monitor/candidates-store.js";
 
 const app = express();
@@ -35,6 +36,14 @@ function renderMiniAppHtml() {
     button, a.button { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 12px 14px; border: 0; border-radius: 14px; background: #f4f4f5; color: #000; font-weight: 800; text-decoration: none; cursor: pointer; }
     button.secondary { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.14); }
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+    .filters { display: grid; gap: 12px; margin: 14px 0; padding: 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; background: rgba(255,255,255,.04); }
+    .filter-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .filter-title h2 { margin: 0; font-size: 18px; }
+    .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    .chip { flex: 0 0 auto; padding: 9px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: #f6f6f6; font-weight: 700; }
+    .chip.active { background: #f4f4f5; color: #000; }
+    label { display: grid; gap: 6px; color: #b9b9c4; font-size: 13px; }
+    input { width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; background: #050506; color: #f6f6f6; }
     .stat, .card { border: 1px solid rgba(255,255,255,.1); border-radius: 18px; background: linear-gradient(180deg, rgba(18,18,22,.96), rgba(7,7,9,.96)); }
     .stat { padding: 13px; }
     .stat span { display: block; color: #858592; font-size: 12px; }
@@ -47,6 +56,8 @@ function renderMiniAppHtml() {
     .pill { display: inline-flex; padding: 4px 9px; border-radius: 999px; background: rgba(156,156,255,.16); color: #c4c4ff; font-size: 11px; text-transform: uppercase; }
     .card h3 { margin: 0 0 8px; font-size: 20px; }
     .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+    .market-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .market-link { padding: 8px 10px; border-radius: 999px; color: #d7d7ff; background: rgba(156,156,255,.12); text-decoration: none; font-size: 12px; font-weight: 800; }
     .metric { padding: 10px; border-radius: 13px; background: rgba(255,255,255,.055); }
     .metric span { display: block; color: #8f8f9c; font-size: 12px; }
     .metric strong { display: block; margin-top: 3px; }
@@ -66,6 +77,22 @@ function renderMiniAppHtml() {
         <button id="scanButton">Осторожный scan</button>
         <button class="secondary" id="refreshButton">Обновить</button>
       </div>
+    </section>
+
+    <section class="filters">
+      <div class="filter-title">
+        <h2>Что искать</h2>
+        <span class="muted">до 100 TON</span>
+      </div>
+      <label>
+        Макс. цена TON
+        <input id="maxPriceInput" inputmode="decimal" value="100" />
+      </label>
+      <p class="muted">NFT</p>
+      <div class="chips" id="collectionChips"></div>
+      <p class="muted">Дорогие фоны</p>
+      <div class="chips" id="backgroundChips"></div>
+      <button class="secondary" id="savePreferencesButton">Сохранить выбор</button>
     </section>
 
     <section class="stats">
@@ -95,6 +122,11 @@ function renderMiniAppHtml() {
     const updatedAt = document.getElementById('updatedAt');
     const scanButton = document.getElementById('scanButton');
     const refreshButton = document.getElementById('refreshButton');
+    const savePreferencesButton = document.getElementById('savePreferencesButton');
+    const maxPriceInput = document.getElementById('maxPriceInput');
+    const collectionChips = document.getElementById('collectionChips');
+    const backgroundChips = document.getElementById('backgroundChips');
+    let scanPreferences = { collections: [], backgrounds: [], options: { collections: [], backgrounds: [] }, maxPrice: 100 };
 
     function formatTon(value) {
       const number = Number(value);
@@ -120,6 +152,8 @@ function renderMiniAppHtml() {
 
       list.innerHTML = visible.map((candidate) => {
         const url = candidate.url ? '<a class="button" target="_blank" rel="noreferrer" href="' + escapeHtml(candidate.url) + '">Открыть лот</a>' : '';
+        const markets = candidate.externalMarkets || {};
+        const marketLinks = Object.entries(markets).filter((entry) => entry[1]).map((entry) => '<a class="market-link" target="_blank" rel="noreferrer" href="' + escapeHtml(entry[1]) + '">' + escapeHtml(entry[0].toUpperCase()) + '</a>').join('');
         return '<article class="card">'
           + '<div class="topline"><span class="pill">' + escapeHtml(candidate.status || 'found') + '</span><span class="muted">' + escapeHtml(candidate.collection || '-') + '</span></div>'
           + '<h3>' + escapeHtml(candidate.title || 'MRKT Gift') + '</h3>'
@@ -130,8 +164,38 @@ function renderMiniAppHtml() {
           + '<div class="metric"><span>Потенциал</span><strong>' + formatTon(candidate.resaleSpread) + '</strong></div>'
           + '<div class="metric"><span>Floor модели</span><strong>' + formatTon(candidate.modelFloor) + '</strong></div>'
           + '<div class="metric"><span>Floor коллекции</span><strong>' + formatTon(candidate.collectionFloor) + '</strong></div>'
-          + '</div>' + url + '</article>';
+          + '</div><div class="market-row">' + marketLinks + '</div>' + url + '</article>';
       }).join('');
+    }
+
+    function renderChips(container, options, selected) {
+      container.innerHTML = options.map((option) => {
+        const active = selected.includes(option) ? ' active' : '';
+        return '<button class="chip' + active + '" type="button" data-value="' + escapeHtml(option) + '">' + escapeHtml(option) + '</button>';
+      }).join('');
+    }
+
+    function getSelected(container) {
+      return [...container.querySelectorAll('.chip.active')].map((chip) => chip.dataset.value);
+    }
+
+    async function loadPreferences() {
+      const response = await fetch('/api/scan/preferences', { cache: 'no-store' });
+      const payload = await response.json();
+      scanPreferences = payload.preferences;
+      maxPriceInput.value = scanPreferences.maxPrice || 100;
+      renderChips(collectionChips, scanPreferences.options.collections, scanPreferences.collections);
+      renderChips(backgroundChips, scanPreferences.options.backgrounds, scanPreferences.backgrounds);
+    }
+
+    function toggleChip(event) {
+      const chip = event.target.closest('.chip');
+
+      if (!chip) {
+        return;
+      }
+
+      chip.classList.toggle('active');
     }
 
     async function loadCandidates() {
@@ -155,6 +219,7 @@ function renderMiniAppHtml() {
       scanButton.textContent = 'Сканирую...';
 
       try {
+        await savePreferences();
         const response = await fetch('/api/alerts/scan', { method: 'POST' });
         const payload = await response.json();
 
@@ -172,7 +237,45 @@ function renderMiniAppHtml() {
     });
 
     refreshButton.addEventListener('click', loadCandidates);
-    loadCandidates();
+    collectionChips.addEventListener('click', toggleChip);
+    backgroundChips.addEventListener('click', toggleChip);
+
+    async function savePreferences() {
+      const response = await fetch('/api/scan/preferences', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          maxPrice: Number(maxPriceInput.value || 100),
+          collections: getSelected(collectionChips),
+          backgrounds: getSelected(backgroundChips)
+        })
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Не удалось сохранить настройки');
+      }
+
+      scanPreferences = payload.preferences;
+    }
+
+    savePreferencesButton.addEventListener('click', async () => {
+      savePreferencesButton.disabled = true;
+      savePreferencesButton.textContent = 'Сохраняю...';
+
+      try {
+        await savePreferences();
+        savePreferencesButton.textContent = 'Сохранено';
+        setTimeout(() => { savePreferencesButton.textContent = 'Сохранить выбор'; }, 1200);
+      } catch (error) {
+        list.innerHTML = '<article class="card empty"><strong class="error">Ошибка настроек</strong><p>' + escapeHtml(error.message) + '</p></article>';
+        savePreferencesButton.textContent = 'Сохранить выбор';
+      } finally {
+        savePreferencesButton.disabled = false;
+      }
+    });
+
+    loadPreferences().then(loadCandidates).catch(loadCandidates);
     setInterval(loadCandidates, 60000);
   </script>
 </body>
@@ -230,6 +333,18 @@ app.get("/api/alerts/candidates", async (_req, res) => {
     return res.json(await getAlertDashboardData());
   } catch (error) {
     return res.status(400).json({ error: error.message || "Candidates fetch failed" });
+  }
+});
+
+app.get("/api/scan/preferences", (_req, res) => {
+  res.json({ preferences: getScanPreferences() });
+});
+
+app.patch("/api/scan/preferences", (req, res) => {
+  try {
+    return res.json({ preferences: updateScanPreferences(req.body) });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || "Scan preferences update failed" });
   }
 });
 

@@ -1,5 +1,6 @@
 import { getPremiumBackgroundNames } from "../monitor/backgrounds.js";
 import { getMrktAuthToken } from "./auth.js";
+import { defaultTargetBackgrounds, defaultTargetCollections, getScanPreferences } from "./scan-config.js";
 
 const MRKT_API_URL = "https://api.tgmrkt.io/api/v1";
 const collectionFloorCache = new Map();
@@ -30,21 +31,14 @@ function getPageSizeForCollection(collectionName, fallbackCount) {
 }
 
 function getMrktConfig() {
-  const targetCollections = (process.env.MRKT_TARGET_COLLECTIONS ?? "Xmas Stocking,Instant Ramen,Lol Pop")
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean);
-  const targetBackgrounds = (process.env.MRKT_TARGET_BACKGROUNDS ?? "Black,Electric Purple,Cyberpunk,Electric Indigo,Neon Blue,Azure Blue,Mint Green,Emerald,Malachite,Sky Blue,Sapphire,Aquamarine,Pacific Green,Shamrock Green,Lavender,Purple,Violet,English Violet,Lilac,Dark Lilac,Navy Blue,French Blue,Silver Blue,Blue,Cobalt Blue,Steel Blue,Maya Blue,Moonstone,Cyan,Teal,Pacific Cyan,Turquoise,Lemongrass,Green,Lime Green,Forest Green,Olive Green,Pistachio,Red,Ruby,Crimson,Coral Red,Gold,Pure Gold,Satin Gold,Yellow,Orange,Carrot Juice,Amber,Mustard,Burgundy,Rosewood,Pink,Magenta,Fuchsia,Raspberry,Mauve,Rose,Platinum,White,Silver,Gray,Grey,Steel Grey,Battleship Grey,Feldgrau,Rifle Green,Khaki Green,Dark Green,Pine Green,Hunter Green,Jade Green,Brown,Bronze,Copper,Beige,Sand,Ivory,Vanilla,Seal Brown,Chocolate,Chestnut,Caramel,Cappuccino,Burnt Sienna")
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean);
+  const preferences = getScanPreferences();
 
   return {
-    maxPrice: process.env.MONOCHROME_MAX_PRICE ? Number(process.env.MONOCHROME_MAX_PRICE) : null,
+    maxPrice: preferences.maxPrice,
     count: Number(process.env.MRKT_PAGE_SIZE ?? 12),
-    targetCollections,
+    targetCollections: preferences.collections.length > 0 ? preferences.collections : defaultTargetCollections,
     scanByBackdrop: process.env.MRKT_SCAN_BY_BACKDROP === "true",
-    targetBackgrounds: [...new Set([...targetBackgrounds, ...getPremiumBackgroundNames()])].slice(0, Number(process.env.MRKT_TARGET_BACKGROUNDS_LIMIT ?? 120)),
+    targetBackgrounds: [...new Set([...(preferences.backgrounds.length > 0 ? preferences.backgrounds : defaultTargetBackgrounds), ...getPremiumBackgroundNames()])].slice(0, Number(process.env.MRKT_TARGET_BACKGROUNDS_LIMIT ?? 120)),
     targetBackgroundsLimit: Number(process.env.MRKT_TARGET_BACKGROUNDS_LIMIT ?? 120)
   };
 }

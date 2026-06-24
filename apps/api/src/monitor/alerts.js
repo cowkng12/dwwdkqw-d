@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { rules } from "../data/store.js";
 import { fetchCollectionFloorPrice, fetchModelFloorPrice } from "../market/mrkt-api.js";
+import { createExternalMarketLinks, getScanPreferences } from "../market/scan-config.js";
 import { fetchMarketItems } from "../market/source.js";
 import { sendTelegramAlert } from "../telegram/bot.js";
 import { getPremiumBackground, normalizeBackgroundName } from "./backgrounds.js";
@@ -69,8 +70,8 @@ const monochromeColorFamilies = [
 ];
 
 function getMaxAlertPrice() {
-  const value = Number(process.env.MONOCHROME_MAX_PRICE ?? 5);
-  return Number.isFinite(value) && value > 0 ? value : 5;
+  const value = Number(getScanPreferences().maxPrice ?? 100);
+  return Number.isFinite(value) && value > 0 ? value : 100;
 }
 
 function getMaxAlertsPerScan() {
@@ -723,7 +724,7 @@ function isAutoBuyEnabled() {
 }
 
 function getBuyReadyMaxPrice() {
-  const value = Number(process.env.MARKET_BUY_READY_MAX_PRICE ?? getMaxAlertPrice());
+  const value = Number(getMaxAlertPrice());
   return Number.isFinite(value) && value > 0 ? value : getMaxAlertPrice();
 }
 
@@ -897,6 +898,7 @@ async function buildCandidate(item, resaleEstimate, buyDecision, status = null, 
     buyDecision: buyDecision ?? null,
     buyCheckedAt: buyDecision ? new Date().toISOString() : null,
     salesCount: item.resale?.salesCount ?? null,
+    externalMarkets: createExternalMarketLinks(item),
     url: item.url,
     candidateReason,
     telegramEligible: status === "sent",
