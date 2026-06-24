@@ -5,6 +5,7 @@ import { items, purchases, rules, users } from "./data/store.js";
 import { getTelegramStatus } from "./telegram/config.js";
 import { getTelegramAccount } from "./telegram/client.js";
 import { getBotStatus, handleTelegramWebhook, setupTelegramBot } from "./telegram/bot.js";
+import { getTelegramAccessStatus, verifyTelegramInitData } from "./telegram/access.js";
 import { getAlertDashboardData, runMarketAlertScanSafely } from "./monitor/alerts.js";
 import { getScanPreferences, updateScanPreferences } from "./market/scan-config.js";
 import { updateAlertCandidateStatus } from "./monitor/candidates-store.js";
@@ -14,6 +15,15 @@ const port = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
+
+function requireMiniAppAccess(req, res, next) {
+  try {
+    req.telegramUser = verifyTelegramInitData(req.get("x-telegram-init-data"));
+    return next();
+  } catch (error) {
+    return res.status(403).json({ error: error.message || "Mini App access denied" });
+  }
+}
 
 function renderMiniAppHtml() {
   return `<!doctype html>
@@ -180,7 +190,7 @@ function renderMiniAppHtml() {
     }
 
     async function loadPreferences() {
-      const response = await fetch('/api/scan/preferences', { cache: 'no-store' });
+      const response = await fetch('/api/scan/preferences', { cache: 'no-store', headers: telegramHeaders() });
       const payload = await response.json();
       scanPreferences = payload.preferences;
       maxPriceInput.value = scanPreferences.maxPrice || 100;
@@ -201,7 +211,7 @@ function renderMiniAppHtml() {
     async function loadCandidates() {
       try {
         updatedAt.textContent = 'загрузка';
-        const response = await fetch('/api/alerts/candidates', { cache: 'no-store' });
+        const response = await fetch('/api/alerts/candidates', { cache: 'no-store', headers: telegramHeaders() });
         const payload = await response.json();
 
         if (!response.ok) {
@@ -220,7 +230,7 @@ function renderMiniAppHtml() {
 
       try {
         await savePreferences();
-        const response = await fetch('/api/alerts/scan', { method: 'POST' });
+        const response = await fetch('/api/alerts/scan', { method: 'POST', headers: telegramHeaders() });
         const payload = await response.json();
 
         if (!response.ok) {
@@ -243,7 +253,7 @@ function renderMiniAppHtml() {
     async function savePreferences() {
       const response = await fetch('/api/scan/preferences', {
         method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', ...telegramHeaders() },
         body: JSON.stringify({
           maxPrice: Number(maxPriceInput.value || 100),
           collections: getSelected(collectionChips),
@@ -277,6 +287,12 @@ function renderMiniAppHtml() {
 
     loadPreferences().then(loadCandidates).catch(loadCandidates);
     setInterval(loadCandidates, 60000);
+
+    function telegramHeaders() {
+      const initData = webApp?.initData;
+
+      return initData ? { 'x-telegram-init-data': initData } : {};
+    }
   </script>
 </body>
 </html>`;
@@ -295,7 +311,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.get("/telegram/status", (_req, res) => {
-  res.json({ telegram: getTelegramStatus(), bot: getBotStatus() });
+  res.json({ telegram: getTelegramStatus(), bot: getBotStatus(), access: getTelegramAccessStatus() });
 });
 
 app.post("/telegram/webhook", async (req, res) => {
@@ -328,7 +344,7 @@ app.post("/monitor/run", async (_req, res) => {
   }
 });
 
-app.get("/api/alerts/candidates", async (_req, res) => {
+app.get("/api/alerts/candidates", requireMiniAppAccess, async (_req, res) => {
   try {
     return res.json(await getAlertDashboardData());
   } catch (error) {
@@ -336,11 +352,11 @@ app.get("/api/alerts/candidates", async (_req, res) => {
   }
 });
 
-app.get("/api/scan/preferences", (_req, res) => {
+app.get("/api/scan/preferences", requireMiniAppAccess, (_req, res) => {
   res.json({ preferences: getScanPreferences() });
 });
 
-app.patch("/api/scan/preferences", (req, res) => {
+app.patch("/api/scan/preferences", requireMiniAppAccess, (req, res) => {
   try {
     return res.json({ preferences: updateScanPreferences(req.body) });
   } catch (error) {
@@ -348,7 +364,7 @@ app.patch("/api/scan/preferences", (req, res) => {
   }
 });
 
-app.post("/api/alerts/scan", async (_req, res) => {
+app.post("/api/alerts/scan", requireMiniAppAccess, async (_req, res) => {
   try {
     const result = await runMarketAlertScanSafely({ manual: true });
     return res.json({ result });
@@ -359,7 +375,7 @@ app.post("/api/alerts/scan", async (_req, res) => {
   }
 });
 
-app.patch("/api/alerts/candidates/:externalItemId", async (req, res) => {
+app.patch("/api/alerts/candidates/:externalItemId", requireMiniAppAccess, async (req, res) => {
   const status = req.body?.status;
 
   if (!["found", "sent", "viewed"].includes(status)) {

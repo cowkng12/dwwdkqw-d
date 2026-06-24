@@ -1,3 +1,5 @@
+import { isTelegramUserAllowed } from "./access.js";
+
 function normalizeString(value) {
   if (typeof value !== "string") {
     return null;
@@ -136,10 +138,16 @@ export async function setupTelegramBot() {
 export async function handleTelegramWebhook(update) {
   const message = update?.message;
   const chatId = message?.chat?.id;
+  const userId = message?.from?.id ?? chatId;
   const text = String(message?.text ?? "").trim();
 
   if (!chatId || !text.startsWith("/")) {
     return { handled: false };
+  }
+
+  if (!isTelegramUserAllowed(userId)) {
+    await sendBotMessage(chatId, "Нет доступа. Этот бот работает только для whitelist пользователей.");
+    return { handled: true, command: "access-denied" };
   }
 
   const command = text.split(/\s+/)[0].split("@")[0].toLowerCase();
