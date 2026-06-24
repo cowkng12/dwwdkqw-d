@@ -1139,7 +1139,7 @@ export async function runMarketAlertScan() {
 export function getAlertScanState() {
   return {
     lastScanAt: lastScanAt ? new Date(lastScanAt).toISOString() : null,
-    cooldownMs: getSafeScanCooldownMs(),
+    cooldownMs: 0,
     bannedUntil: bannedUntil ? new Date(bannedUntil).toISOString() : null,
     inFlight: Boolean(scanInFlight),
     candidateCount: null
@@ -1168,11 +1168,6 @@ export async function runMarketAlertScanSafely({ manual = false } = {}) {
   if (bannedUntil > now) {
     const waitSeconds = Math.ceil((bannedUntil - now) / 1000);
     throw new Error(`MRKT banned cooldown active for ${waitSeconds}s`);
-  }
-
-  if (manual && lastScanAt && now - lastScanAt < getSafeScanCooldownMs()) {
-    const waitSeconds = Math.ceil((getSafeScanCooldownMs() - (now - lastScanAt)) / 1000);
-    throw new Error(`MRKT manual scan cooldown active for ${waitSeconds}s`);
   }
 
   scanInFlight = runMarketAlertScan().finally(() => {

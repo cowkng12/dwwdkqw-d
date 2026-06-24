@@ -60,7 +60,19 @@ function renderMiniAppHtml() {
     .stat strong { display: block; margin-top: 5px; font-size: 20px; }
     .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 12px; }
     .toolbar h2 { margin: 0; font-size: 20px; }
-    .list { display: grid; gap: 12px; }
+    .feed-header { display: grid; grid-template-columns: 64px minmax(0, 1.35fr) .72fr .72fr .72fr 42px; align-items: center; gap: 10px; padding: 0 4px 10px; border-bottom: 1px solid rgba(255,255,255,.08); color: #ffd91f; font-weight: 800; }
+    .feed-header span:first-child { grid-column: 1 / 3; color: #f6f6f6; }
+    .list { display: grid; gap: 0; }
+    .candidate-row { display: grid; grid-template-columns: 64px minmax(0, 1.35fr) .72fr .72fr .72fr 42px; align-items: center; gap: 10px; min-height: 86px; padding: 12px 4px; border-bottom: 1px solid rgba(255,255,255,.08); text-decoration: none; color: inherit; }
+    .candidate-row:active { background: rgba(255,255,255,.04); }
+    .nft-image { width: 64px; height: 64px; object-fit: contain; border-radius: 14px; background: radial-gradient(circle, rgba(255,255,255,.14), rgba(255,255,255,.03)); }
+    .nft-fallback { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 14px; background: linear-gradient(135deg, #2b2b35, #0d0d10); color: #ffd91f; font-weight: 900; font-size: 22px; }
+    .nft-title { display: block; overflow: hidden; color: #f8f8fb; font-weight: 900; font-size: 19px; line-height: 1.12; text-overflow: ellipsis; white-space: nowrap; }
+    .nft-subtitle { display: block; margin-top: 4px; overflow: hidden; color: #8f8f9c; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+    .feed-value { overflow: hidden; color: #f8f8fb; font-weight: 900; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
+    .price-value { color: #ffd91f; }
+    .profit-value { color: #16d463; }
+    .select-badge { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 13px; background: #ffd91f; color: #000; font-weight: 1000; font-size: 22px; }
     .card { padding: 16px; }
     .topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
     .pill { display: inline-flex; padding: 4px 9px; border-radius: 999px; background: rgba(156,156,255,.16); color: #c4c4ff; font-size: 11px; text-transform: uppercase; }
@@ -74,7 +86,15 @@ function renderMiniAppHtml() {
     .muted { color: #9696a3; }
     .error { color: #ff9f9f; }
     .empty { padding: 28px 16px; text-align: center; }
-    @media (max-width: 560px) { .actions, .stats, .metrics { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) {
+      .actions, .stats, .metrics { grid-template-columns: 1fr; }
+      .feed-header { grid-template-columns: 58px minmax(0, 1.2fr) .7fr .7fr 42px; }
+      .feed-header span:nth-child(4) { display: none; }
+      .candidate-row { grid-template-columns: 58px minmax(0, 1.2fr) .7fr .7fr 42px; gap: 8px; }
+      .candidate-row .feed-value:nth-of-type(4) { display: none; }
+      .nft-image, .nft-fallback { width: 58px; height: 58px; }
+      .nft-title { font-size: 18px; }
+    }
   </style>
 </head>
 <body>
@@ -115,6 +135,13 @@ function renderMiniAppHtml() {
       <h2>Кандидаты</h2>
       <span class="muted" id="updatedAt">загрузка</span>
     </div>
+    <div class="feed-header">
+      <span>Выбрать все</span>
+      <span>Цена</span>
+      <span>Флор</span>
+      <span>Оборот</span>
+      <span class="select-badge">✓</span>
+    </div>
     <section class="list" id="candidateList"></section>
   </main>
 
@@ -141,6 +168,16 @@ function renderMiniAppHtml() {
     function formatTon(value) {
       const number = Number(value);
       return Number.isFinite(number) ? number.toFixed(2).replace(/\.00$/, '') + ' TON' : '-';
+    }
+
+    function formatNumber(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(number) : '-';
+    }
+
+    function formatShortDate(value) {
+      const date = new Date(value || Date.now());
+      return Number.isNaN(date.getTime()) ? '-' : new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(date);
     }
 
     function escapeHtml(value) {
@@ -179,20 +216,22 @@ function renderMiniAppHtml() {
       }
 
       list.innerHTML = visible.map((candidate) => {
-        const url = candidate.url ? '<a class="button" target="_blank" rel="noreferrer" href="' + escapeHtml(candidate.url) + '">Открыть лот</a>' : '';
-        const markets = candidate.externalMarkets || {};
-        const marketLinks = Object.entries(markets).filter((entry) => entry[1]).map((entry) => '<a class="market-link" target="_blank" rel="noreferrer" href="' + escapeHtml(entry[1]) + '">' + escapeHtml(entry[0].toUpperCase()) + '</a>').join('');
-        return '<article class="card">'
-          + '<div class="topline"><span class="pill">' + escapeHtml(candidate.status || 'found') + '</span><span class="muted">' + escapeHtml(candidate.collection || '-') + '</span></div>'
-          + '<h3>' + escapeHtml(candidate.title || 'MRKT Gift') + '</h3>'
-          + '<p class="muted">Модель: ' + escapeHtml(candidate.model || '-') + '</p>'
-          + '<p class="muted">Фон: ' + escapeHtml(candidate.background || '-') + '</p>'
-          + '<div class="metrics">'
-          + '<div class="metric"><span>Цена</span><strong>' + formatTon(candidate.price) + '</strong></div>'
-          + '<div class="metric"><span>Потенциал</span><strong>' + formatTon(candidate.resaleSpread) + '</strong></div>'
-          + '<div class="metric"><span>Floor модели</span><strong>' + formatTon(candidate.modelFloor) + '</strong></div>'
-          + '<div class="metric"><span>Floor коллекции</span><strong>' + formatTon(candidate.collectionFloor) + '</strong></div>'
-          + '</div><div class="market-row">' + marketLinks + '</div>' + url + '</article>';
+        const href = candidate.url || '#';
+        const image = candidate.photoUrl
+          ? '<img class="nft-image" src="' + escapeHtml(candidate.photoUrl) + '" alt="" loading="lazy" />'
+          : '<div class="nft-fallback">' + escapeHtml(String(candidate.title || '?').slice(0, 1)) + '</div>';
+        const floor = Number.isFinite(Number(candidate.modelFloor)) ? candidate.modelFloor : candidate.resaleEstimate || candidate.collectionFloor;
+        const turnover = candidate.salesCount ?? candidate.resaleRatio ?? candidate.resaleSpread;
+        const profitClass = Number(candidate.resaleSpread) > 0 ? ' profit-value' : '';
+
+        return '<a class="candidate-row" target="_blank" rel="noreferrer" href="' + escapeHtml(href) + '">'
+          + image
+          + '<span><strong class="nft-title">' + escapeHtml(candidate.title || 'MRKT Gift') + '</strong><span class="nft-subtitle">' + escapeHtml(formatShortDate(candidate.lastSeenAt)) + ' · ' + escapeHtml(candidate.background || '-') + '</span></span>'
+          + '<span class="feed-value price-value">◆ ' + escapeHtml(formatTon(candidate.price)) + '</span>'
+          + '<span class="feed-value' + profitClass + '">◆ ' + escapeHtml(formatTon(floor)) + '</span>'
+          + '<span class="feed-value">◆ ' + escapeHtml(formatNumber(turnover)) + '</span>'
+          + '<span class="select-badge">✓</span>'
+          + '</a>';
       }).join('');
     }
 
